@@ -150,10 +150,11 @@ class Collection(Record):
             for key, val in kwargs.items():
                 setattr(row, key, val)
             # make sure the new record is inserted at the end of each view
-            for view in self.parent.views:
-                if isinstance(view, CalendarView):
-                    continue
-                view.set("page_sort", view.get("page_sort", []) + [row_id])
+            # todo: исправить этот треш
+            # for view in self.parent.views:
+            #     if isinstance(view, CalendarView):
+            #         continue
+            #     view.set("page_sort", view.get("page_sort", []) + [row_id])
 
         return row
 

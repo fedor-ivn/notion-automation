@@ -316,6 +316,7 @@ class RecordStore(object):
         if isinstance(sort, dict):
             sort = [sort]
 
+        # noinspection PyDictCreation
         data = {
             "collectionId": collection_id,
             "collectionViewId": collection_view_id,
@@ -334,6 +335,55 @@ class RecordStore(object):
                 "sort": sort,
             },
         }
+
+        # # Todo: переделать
+        # # #### shit begin ####
+        # data['query'] = {
+        #         "sort": [
+        #             {
+        #                 "property": "fVTo",
+        #                 "direction": "ascending"
+        #             },
+        #             {
+        #                 "property": "\\}q:",
+        #                 "direction": "ascending"
+        #             },
+        #             {
+        #                 "property": "OLUC",
+        #                 "direction": "ascending"
+        #             },
+        #             {
+        #                 "property": "NmA]",
+        #                 "direction": "ascending"
+        #             },
+        #             {
+        #                 "property": "title",
+        #                 "direction": "ascending"
+        #             }
+        #         ],
+        #         "filter": {
+        #             "filters": [
+        #                 {
+        #                     "filter": {
+        #                         "value": {
+        #                             "type": "exact",
+        #                             "value": True
+        #                         },
+        #                         "operator": "checkbox_is"
+        #                     },
+        #                     "property": "mDK|"
+        #                 }
+        #             ],
+        #             "operator": "and"
+        #         },
+        #         "aggregations": [
+        #             {
+        #                 "property": "title",
+        #                 "aggregator": "count"
+        #             }
+        #         ]
+        #     }
+        # # #### shit end #####
 
         response = self._client.post("queryCollection", data).json()
 

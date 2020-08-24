@@ -59,10 +59,6 @@ def main():
     print(len(recurring_tasks))
     print(recurring_tasks)
 
-    # todo: и здесь тоже
-    #  third_party/notion/store.py
-    # row = cv.collection.add_row()
-
     for row in recurring_tasks:
         print(row.task)
         if not row.active:

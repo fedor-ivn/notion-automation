@@ -6,7 +6,7 @@ name: recurring tasks
 # events but only for the master branch
 on:
   schedule:
-    - cron:  '*/15 * * * *'
+    - cron:  '*/15 * * * *' 
   workflow_dispatch:
     inputs:
       logLevel:
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [2.7, 3.5, 3.6, 3.7, 3.8]
+        python-version: [3.6]
 
     steps:
     - uses: actions/checkout@v2

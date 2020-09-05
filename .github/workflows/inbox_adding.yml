@@ -33,6 +33,6 @@ jobs:
     - name: Running task adding process
       env:
         TOKEN_V2: ${{ secrets.TOKEN_V2 }}
-        INBOX_TASK_TEXT: ${{ inputs.taskText }} 
+#        INBOX_TASK_TEXT: ${{ inputs.taskText }}
       run: |
         python inbox_adding.py

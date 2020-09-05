@@ -8,7 +8,7 @@ TASKS_TABLE_URL = 'https://www.notion.so/fedorivn/f1679ab27ce74e62b8cf14b26a4585
 
 def main():
     default = 'Inbox task text was not specified.'
-    task_text = getenv('INPUT_TASKTEXT', default)
+    task_text = getenv('INBOX_TASK_TEXT', default)
     tasks_table = client.get_collection_view(TASKS_TABLE_URL)
     new_entry = tasks_table.collection.add_row()
     new_entry.task = task_text

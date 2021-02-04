@@ -289,10 +289,13 @@ class RecordStore(object):
 
     def store_recordmap(self, recordmap):
         for table, records in recordmap.items():
-            for id, record in records.items():
-                self._update_record(
-                    table, id, value=record.get("value"), role=record.get("role")
-                )
+            try:
+                for id, record in records.items():
+                    self._update_record(
+                        table, id, value=record.get("value"), role=record.get("role")
+                    )
+            except AttributeError as e:
+                logger.debug('')
 
     def call_query_collection(
         self,
@@ -301,89 +304,39 @@ class RecordStore(object):
         search="",
         type="table",
         aggregate=[],
-        filter=[],
-        filter_operator="and",
+        aggregations=[],
+        filter={},
         sort=[],
         calendar_by="",
         group_by="",
     ):
 
+        assert not (aggregate and aggregations), "Use only one of `aggregate` or `aggregations` (old vs new format)"
+
         # convert singletons into lists if needed
         if isinstance(aggregate, dict):
             aggregate = [aggregate]
-        if isinstance(filter, dict):
-            filter = [filter]
         if isinstance(sort, dict):
             sort = [sort]
 
-        # noinspection PyDictCreation
         data = {
             "collectionId": collection_id,
             "collectionViewId": collection_view_id,
             "loader": {
                 "limit": 10000,
                 "loadContentCover": True,
-                "query": search,
+                "searchQuery": search,
                 "userLocale": "en",
                 "userTimeZone": str(get_localzone()),
                 "type": type,
             },
             "query": {
                 "aggregate": aggregate,
+                "aggregations": aggregations,
                 "filter": filter,
-                "filter_operator": filter_operator,
                 "sort": sort,
             },
         }
-
-        # # Todo: переделать
-        # # #### shit begin ####
-        # data['query'] = {
-        #         "sort": [
-        #             {
-        #                 "property": "fVTo",
-        #                 "direction": "ascending"
-        #             },
-        #             {
-        #                 "property": "\\}q:",
-        #                 "direction": "ascending"
-        #             },
-        #             {
-        #                 "property": "OLUC",
-        #                 "direction": "ascending"
-        #             },
-        #             {
-        #                 "property": "NmA]",
-        #                 "direction": "ascending"
-        #             },
-        #             {
-        #                 "property": "title",
-        #                 "direction": "ascending"
-        #             }
-        #         ],
-        #         "filter": {
-        #             "filters": [
-        #                 {
-        #                     "filter": {
-        #                         "value": {
-        #                             "type": "exact",
-        #                             "value": True
-        #                         },
-        #                         "operator": "checkbox_is"
-        #                     },
-        #                     "property": "mDK|"
-        #                 }
-        #             ],
-        #             "operator": "and"
-        #         },
-        #         "aggregations": [
-        #             {
-        #                 "property": "title",
-        #                 "aggregator": "count"
-        #             }
-        #         ]
-        #     }
-        # # #### shit end #####
 
         response = self._client.post("queryCollection", data).json()
 

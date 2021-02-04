@@ -7,8 +7,5 @@ dist/
 
 # pipenv
 .env
-venv/
+.venv
 Pipfile
-
-.idea/
-notion.log

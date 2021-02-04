@@ -1,5 +1,9 @@
 from third_party.notion.client import NotionClient
 from os import getenv
+import logging
+
+logger = logging.getLogger('notion')
+logger.setLevel(logging.DEBUG)
 
 TOKEN = getenv('TOKEN_V2')
 client = NotionClient(token_v2=TOKEN)

@@ -39,9 +39,17 @@ def create_session(client_specified_retry=None):
         retry = Retry(
             5,
             backoff_factor=0.3,
-            status_forcelist=(502,),
+            status_forcelist=(502, 503, 504),
             # CAUTION: adding 'POST' to this list which is not technically idempotent
-            method_whitelist=("POST", "HEAD", "TRACE", "GET", "PUT", "OPTIONS", "DELETE"),
+            method_whitelist=(
+                "POST",
+                "HEAD",
+                "TRACE",
+                "GET",
+                "PUT",
+                "OPTIONS",
+                "DELETE",
+            ),
         )
     adapter = HTTPAdapter(max_retries=retry)
     session.mount("https://", adapter)
@@ -88,16 +96,37 @@ class NotionClient(object):
 
     def start_monitoring(self):
         self._monitor.poll_async()
+    
+    def _fetch_guest_space_data(self, records):
+        """
+        guest users have an empty `space` dict, so get the space_id from the `space_view` dict instead,
+        and fetch the space data from the getPublicSpaceData endpoint.
+
+        Note: This mutates the records dict
+        """
+        space_id = list(records["space_view"].values())[0]["value"]["space_id"]
+
+        space_data = self.post(
+            "getPublicSpaceData", {"type": "space-ids", "spaceIds": [space_id]}
+        ).json()
+
+        records["space"] = {
+            space["id"]: {"value": space} for space in space_data["results"]
+        }
+
 
     def _set_token(self, email=None, password=None):
         if not email:
-            email = input(f'Enter Your Notion Email\n')
+            email = input("Enter your Notion email address:\n")
         if not password:
-            password = getpass(f'Enter Your Notion Password\n')
-        self.post("loginWithEmail", {"email":email,"password":password}).json()
+            password = getpass("Enter your Notion password:\n")
+        self.post("loginWithEmail", {"email": email, "password": password}).json()
 
     def _update_user_info(self):
         records = self.post("loadUserContent", {}).json()["recordMap"]
+        if not records["space"]:
+            self._fetch_guest_space_data(records)
+
         self._store.store_recordmap(records)
         self.current_user = self.get_user(list(records["notion_user"].keys())[0])
         self.current_space = self.get_space(list(records["space"].keys())[0])
@@ -281,7 +310,7 @@ class NotionClient(object):
         data = {
             "query": search,
             "parentId": parent_id,
-            "limit": 10000,
+            "limit": 100,
             "spaceId": self.current_space.id,
         }
         response = self.post("searchPagesWithParent", data).json()

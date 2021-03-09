@@ -277,7 +277,7 @@ class RecordStore(object):
 
         data = {
             "pageId": page_id,
-            "limit": 100000,
+            "limit": 100,
             "cursor": {"stack": []},
             "chunkNumber": 0,
             "verticalColumns": False,
@@ -289,13 +289,14 @@ class RecordStore(object):
 
     def store_recordmap(self, recordmap):
         for table, records in recordmap.items():
-            try:
-                for id, record in records.items():
-                    self._update_record(
-                        table, id, value=record.get("value"), role=record.get("role")
-                    )
-            except AttributeError as e:
-                logger.debug('')
+            if not isinstance(records, dict):
+                continue
+            for id, record in records.items():
+                if not isinstance(record, dict):
+                    continue
+                self._update_record(
+                    table, id, value=record.get("value"), role=record.get("role")
+                )
 
     def call_query_collection(
         self,
@@ -311,7 +312,9 @@ class RecordStore(object):
         group_by="",
     ):
 
-        assert not (aggregate and aggregations), "Use only one of `aggregate` or `aggregations` (old vs new format)"
+        assert not (
+            aggregate and aggregations
+        ), "Use only one of `aggregate` or `aggregations` (old vs new format)"
 
         # convert singletons into lists if needed
         if isinstance(aggregate, dict):
@@ -323,7 +326,7 @@ class RecordStore(object):
             "collectionId": collection_id,
             "collectionViewId": collection_view_id,
             "loader": {
-                "limit": 10000,
+                "limit": 1000000,
                 "loadContentCover": True,
                 "searchQuery": search,
                 "userLocale": "en",

@@ -5,7 +5,7 @@ import sys
 from third_party.notion.smoke_test import run_live_smoke_test
 
 if __name__ == "__main__":
-    description = "Run notion-py client smoke tests"
+    description = "Run third_party client smoke tests"
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
         "--page", dest="page", help="page URL or ID", required=True, type=str

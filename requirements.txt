@@ -6,3 +6,8 @@ tzlocal
 python-slugify
 dictdiffer
 cached-property
+
+notion-client
+python-dotenv
+croniter
+isodate

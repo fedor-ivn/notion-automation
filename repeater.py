@@ -207,9 +207,13 @@ class TaskRepeater(BaseNotionPage):
     def __init__(self, client: Client, data: dict = None, page_id: str = None):
         super().__init__(client, data, page_id)
 
-        schedule = self.properties['Crontab']['select']['name']
+        # in select field comma character is not allowed, so we use ';' instead
+        schedule = self.properties['Crontab']['select']['name'].replace(';', ',')
+
         last_repeat = datetime.fromisoformat(self.properties['Last repeat']['date']['start'])
-        self.next_repeat = croniter.croniter(schedule, last_repeat, ret_type=datetime).get_next()
+        cron = croniter.croniter(schedule, last_repeat, ret_type=datetime)
+        self.next_repeat = cron.get_next()
+        self.next_next_repeat = cron.get_next()
 
     @property
     def is_active(self):
@@ -218,9 +222,7 @@ class TaskRepeater(BaseNotionPage):
     def should_be_executed(self) -> bool:
         return self.next_repeat - datetime.now() <= timedelta(minutes=TIMEDELTA_IN_MINUTES)
 
-    def update_last_repeat(self):
-        date = self.next_repeat
-
+    def update_date_field(self, date, property_name):
         # optimize datetime object for Notion representation
         if date.time().isoformat() == '00:00:00':
             date = date.date()
@@ -228,15 +230,20 @@ class TaskRepeater(BaseNotionPage):
         self.client.pages.update(
             self.page_id,
             properties={
-                'Last repeat': {
+                property_name: {
                     'date': {
-                        "start": date.isoformat()
+                        'start': date.isoformat()
                     }
                 }
             }
         )
 
+    def update_last_repeat(self):
+        self.update_date_field(self.next_repeat, 'Last repeat')
+
     def execute(self):
+        self.update_date_field(self.next_repeat, 'Next repeat')
+
         if not (self.is_active and self.should_be_executed()):
             print('Should not be executed. Skipping...')
             return
@@ -250,6 +257,7 @@ class TaskRepeater(BaseNotionPage):
             template.render()
 
         self.update_last_repeat()
+        self.update_date_field(self.next_next_repeat, 'Next repeat')
 
 
 def run_repeaters():

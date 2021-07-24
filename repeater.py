@@ -2,6 +2,9 @@
 todo:
     - logging
     - pagination logic processing
+    - refactoring
+        - date objects and formating (make it in a class)
+        - replace legacy property (context)
 """
 import os
 from datetime import datetime, timedelta
@@ -13,13 +16,37 @@ from dotenv import load_dotenv
 from notion_client import Client
 import croniter
 
-load_dotenv()
+from third_party.notion.client import NotionClient
+
+
 TIMEZONE = 'Europe/Moscow'
+TIMEDELTA_IN_MINUTES = 5
+
+load_dotenv()
+
 NOTION_API_TOKEN = os.environ['NOTION_API_TOKEN']
 TASK_TEMPLATE_DATABASE_ID = os.environ['TASK_TEMPLATE_DATABASE_ID']
 TASK_REPEATER_DATABASE_ID = os.environ['TASK_REPEATER_DATABASE_ID']
 TASK_DATABASE_ID = os.environ['TASK_DATABASE_ID']
-TIMEDELTA_IN_MINUTES = 5
+
+LEGACY_NOTION_TOKEN_V2 = os.environ['TOKEN_V2']
+
+
+def legacy_unsupported_fields_update(template_url, task_url):
+    try:
+        client = NotionClient(token_v2=LEGACY_NOTION_TOKEN_V2)
+        template = client.get_block(template_url)
+        print(template)
+        task = client.get_block(task_url)
+        print(task)
+        if template.files:
+            task.files = template.files
+        if template.icon:
+            task.icon = template.icon
+        if template.cover:
+            task.cover = template.cover
+    except:
+        print('Cannot update files, icon, cover.')
 
 
 class BaseNotionPage:
@@ -35,6 +62,10 @@ class BaseNotionPage:
     @property
     def page_id(self) -> str:
         return self.data['id']
+
+    @property
+    def url(self) -> str:
+        return self.data['url']
 
     @property
     def properties(self) -> dict:
@@ -200,6 +231,9 @@ class TaskTemplate(BaseNotionPage):
             children=content
         )
         print(children)
+
+        legacy_unsupported_fields_update(self.url, task_page.url)
+
         return task_page
 
 
@@ -208,7 +242,7 @@ class TaskRepeater(BaseNotionPage):
         super().__init__(client, data, page_id)
 
         # in select field comma character is not allowed, so we use ';' instead
-        schedule = self.properties['Crontab']['select']['name'].replace(';', ',')
+        schedule = self.properties['Crontab']['rich_text'][0]['text']['content']
 
         last_repeat = datetime.fromisoformat(self.properties['Last repeat']['date']['start'])
         cron = croniter.croniter(schedule, last_repeat, ret_type=datetime)

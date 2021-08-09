@@ -216,8 +216,6 @@ class TaskTemplate(BaseNotionPage):
 
     def render(self):
         props = self.build_task_properties()
-        content = self.get_page_content()
-
         task_page_data = self.client.pages.create(
             parent={
                 'database_id': TASK_DATABASE_ID
@@ -225,12 +223,16 @@ class TaskTemplate(BaseNotionPage):
             properties=props
         )
         print(task_page_data)
+
         task_page = BaseNotionPage(self.client, task_page_data)
-        children = self.client.blocks.children.append(
-            task_page.page_id,
-            children=content
-        )
-        print(children)
+
+        content = self.get_page_content()
+        if content:
+            children = self.client.blocks.children.append(
+                task_page.page_id,
+                children=content
+            )
+            print(children)
 
         legacy_unsupported_fields_update(self.url, task_page.url)
 

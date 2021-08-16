@@ -53,5 +53,10 @@ jobs:
         TASK_TEMPLATE_DATABASE_ID: ${{ secrets.TASK_TEMPLATE_DATABASE_ID }}
         TASK_REPEATER_DATABASE_ID: ${{ secrets.TASK_REPEATER_DATABASE_ID }}
         TASK_DATABASE_ID: ${{ secrets.TASK_DATABASE_ID }}
+        LOGGING_EMAIL_HOST: ${{ secrets.LOGGING_EMAIL_HOST }}
+        LOGGING_EMAIL_FROM_ADDRESS: ${{ secrets.LOGGING_EMAIL_FROM_ADDRESS }}
+        LOGGING_EMAIL_TO_ADDRESS: ${{ secrets.LOGGING_EMAIL_TO_ADDRESS }}
+        LOGGING_EMAIL_USER: ${{ secrets.LOGGING_EMAIL_USER }}
+        LOGGING_EMAIL_PASSWORD: ${{ secrets.LOGGING_EMAIL_PASSWORD }}
       run: |
         python repeater.py

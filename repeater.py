@@ -1,6 +1,5 @@
 """
 todo:
-    - logging
     - pagination logic processing
     - refactoring
         - date objects and formating (make it in a class)
@@ -315,6 +314,7 @@ class TaskRepeater(BaseNotionPage):
 
         self.update_last_repeat()
         self.update_date_field(self.next_next_repeat, 'Next repeat')
+        self.logger.info(f'Repeater "{self.name}" was successfully executed.')
 
 
 def run_repeaters():
@@ -337,7 +337,11 @@ def run_repeaters():
 
 
 def main():
-    run_repeaters()
+    try:
+        run_repeaters()
+    except Exception as e:
+        logger = custom_logging.get_logger(__name__)
+        logger.exception(e)
 
 
 if __name__ == '__main__':

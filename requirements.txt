@@ -11,3 +11,4 @@ notion-client
 python-dotenv
 croniter
 isodate
+coloredlogs

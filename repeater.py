@@ -18,6 +18,7 @@ import croniter
 
 from third_party.notion.client import NotionClient
 
+import custom_logging
 
 TIMEZONE = 'Europe/Moscow'
 TIMEDELTA_IN_MINUTES = 5
@@ -33,12 +34,19 @@ LEGACY_NOTION_TOKEN_V2 = os.environ['TOKEN_V2']
 
 
 def legacy_unsupported_fields_update(template_url, task_url):
+    logger = custom_logging.get_logger(__name__)
     try:
+        logger.info('Authentication using `TOKEN_V2`')
         client = NotionClient(token_v2=LEGACY_NOTION_TOKEN_V2)
+
+        logger.info('Getting a template page')
         template = client.get_block(template_url)
-        print(template)
+        logger.debug(template)
+
+        logger.info('Getting a task page')
         task = client.get_block(task_url)
-        print(task)
+        logger.debug(task)
+
         if template.files:
             task.files = template.files
         if template.icon:
@@ -46,18 +54,22 @@ def legacy_unsupported_fields_update(template_url, task_url):
         if template.cover:
             task.cover = template.cover
     except:
-        print('Cannot update files, icon, cover.')
+        logger.error('Cannot update files, icon, cover.')
 
 
 class BaseNotionPage:
     def __init__(self, client: Client, data: dict = None, page_id: str = None):
         self.client = client
+        self.logger = custom_logging.get_logger(__name__)
+
         if data:
             self.data = data
         elif page_id:
             self.data = self.client.pages.retrieve(page_id=page_id)
         else:
-            raise ValueError('Either data or page_id should be provided.')
+            msg = 'Either data or page_id should be provided.'
+            self.logger.error(msg)
+            raise ValueError(msg)
 
     @property
     def page_id(self) -> str:
@@ -129,6 +141,7 @@ class TaskTemplate(BaseNotionPage):
         """
         Renders all related tasks and returns list of ids
         """
+        self.logger.info('Starting rendering of the related tasks')
         related_template_ids = self.get_relation_ids('Related tasks')
         res = []
         for template_id in related_template_ids:
@@ -158,7 +171,7 @@ class TaskTemplate(BaseNotionPage):
         if date.time().isoformat() == '00:00:00':
             date = date.date()
 
-        print(date.isoformat())
+        self.logger.debug(date.isoformat())
         return date
 
     def build_task_properties(self):
@@ -187,7 +200,7 @@ class TaskTemplate(BaseNotionPage):
             if key in props_copy:
                 del props_copy[key]
 
-        print(props_copy)
+        self.logger.debug(f'properties copy:\n{props_copy}')
 
         for old_name, new_id in self.NAME_REPLACING_FIELDS_MAPPING.items():
             if old_name in props_copy:
@@ -201,9 +214,10 @@ class TaskTemplate(BaseNotionPage):
         """
         block_type = child['type']
         if block_type == 'unsupported':
-            raise RenderError(
-                f'Template "{self.name}" contains unsupported blocks. You should remove them.'
-            )
+            msg = f'Template "{self.name}" contains unsupported blocks. You should remove them.'
+            self.logger.error(msg)
+            raise RenderError(msg)
+
         include_fields = ['object', 'type', block_type]
         return {
             key: child[key] for key in include_fields
@@ -215,6 +229,7 @@ class TaskTemplate(BaseNotionPage):
         return [self.get_prepared_child(child) for child in children]
 
     def render(self):
+        self.logger.info(f'Starting render of template "{self.name}"')
         props = self.build_task_properties()
         task_page_data = self.client.pages.create(
             parent={
@@ -222,7 +237,7 @@ class TaskTemplate(BaseNotionPage):
             },
             properties=props
         )
-        print(task_page_data)
+        self.logger.debug(f'Task page data:\n{task_page_data}')
 
         task_page = BaseNotionPage(self.client, task_page_data)
 
@@ -232,7 +247,7 @@ class TaskTemplate(BaseNotionPage):
                 task_page.page_id,
                 children=content
             )
-            print(children)
+            self.logger.debug(f'Children:\n{children}')
 
         legacy_unsupported_fields_update(self.url, task_page.url)
 
@@ -254,6 +269,10 @@ class TaskRepeater(BaseNotionPage):
     @property
     def is_active(self):
         return self.properties['Active']['checkbox']
+
+    @property
+    def name(self):
+        return self.properties['Name']['title'][0]['plain_text']
 
     def should_be_executed(self) -> bool:
         return self.next_repeat - datetime.now() <= timedelta(minutes=TIMEDELTA_IN_MINUTES)
@@ -281,8 +300,10 @@ class TaskRepeater(BaseNotionPage):
         self.update_date_field(self.next_repeat, 'Next repeat')
 
         if not (self.is_active and self.should_be_executed()):
-            print('Should not be executed. Skipping...')
+            self.logger.info(f'Repeater "{self.name}" should not be executed. Skipping...')
             return
+
+        self.logger.info(f'Starting repeater "{self.name}" executing...')
 
         for template_id in self.get_relation_ids('Templates'):
             template = TaskTemplate(
@@ -297,7 +318,8 @@ class TaskRepeater(BaseNotionPage):
 
 
 def run_repeaters():
-    client = Client(auth=NOTION_API_TOKEN)
+    logger = custom_logging.get_logger(__name__)
+    client = Client(auth=NOTION_API_TOKEN, logger=logger)
 
     repeaters_data = client.databases.query(
         TASK_REPEATER_DATABASE_ID,

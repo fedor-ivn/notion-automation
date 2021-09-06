@@ -52,8 +52,8 @@ def legacy_unsupported_fields_update(template_url, task_url):
             task.icon = template.icon
         if template.cover:
             task.cover = template.cover
-    except:
-        logger.error('Cannot update files, icon, cover.')
+    except Exception as e:
+        logger.exception(e)
 
 
 class BaseNotionPage:
@@ -92,6 +92,7 @@ class RenderError(Exception):
 
 class TaskTemplate(BaseNotionPage):
     ID_REMOVING_EXCLUDE_FIELDS = ['relation']
+
     # Name (in templates) -> id (in tasks)
     NAME_REPLACING_FIELDS_MAPPING = {
         'Name': 'title',
@@ -106,6 +107,7 @@ class TaskTemplate(BaseNotionPage):
         'Parent task': 'xs=Y',
         'Related tasks': 'gg;y',
     }
+
     DURATION_STRING_ALIASES = {
         '@immediately': 'P0D',
         '@week': 'P7D',
@@ -229,13 +231,20 @@ class TaskTemplate(BaseNotionPage):
 
     def render(self):
         self.logger.info(f'Starting render of template "{self.name}"')
+
         props = self.build_task_properties()
-        task_page_data = self.client.pages.create(
-            parent={
-                'database_id': TASK_DATABASE_ID
-            },
-            properties=props
-        )
+        create_args = {
+            'parent': {
+                 'database_id': TASK_DATABASE_ID
+             },
+             'properties': props
+        }
+
+        # for field in ['icon', 'cover']:
+        #     if field in self.data:
+        #         create_args[field] = self.data[field]
+
+        task_page_data = self.client.pages.create(**create_args)
         self.logger.debug(f'Task page data:\n{task_page_data}')
 
         task_page = BaseNotionPage(self.client, task_page_data)

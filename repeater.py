@@ -157,7 +157,8 @@ class TaskTemplate(BaseNotionPage):
 
     def get_task_date(self):
         duration_field = self.properties.get('Duration after repeat (ISO 8601)')
-        if not duration_field:
+        self.logger.debug(f'{duration_field}')
+        if not duration_field['select']:
             return
 
         duration_string = duration_field['select']['name']

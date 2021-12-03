@@ -12,3 +12,6 @@ Pipfile
 
 .idea/
 notion.log
+
+# MacOS
+.DS_Store

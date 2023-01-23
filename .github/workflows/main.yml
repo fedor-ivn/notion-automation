@@ -59,4 +59,4 @@ jobs:
         LOGGING_EMAIL_USER: ${{ secrets.LOGGING_EMAIL_USER }}
         LOGGING_EMAIL_PASSWORD: ${{ secrets.LOGGING_EMAIL_PASSWORD }}
       run: |
-        python repeater.py
+        python done_date.py
